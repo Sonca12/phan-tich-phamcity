@@ -1,0 +1,88 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from mpl_toolkits.mplot3d import Axes3D
+
+import pandas as pd
+
+# Đọc file Excel
+file_path = r"C:\Users\HP\Downloads\sp_pharma.xlsx"
+data = pd.read_excel(file_path)
+
+# Hiển thị dữ liệu
+print(data.head())  # Hiển thị 5 dòng đầu tiên của dữ liệu
+
+# Xử lý dữ liệu
+data = data.dropna()  # Loại bỏ các giá trị null
+numeric_cols = ['Price', 'Likes', 'Sold']
+data[numeric_cols] = data[numeric_cols].apply(pd.to_numeric, errors='coerce')
+data = data.dropna(subset=numeric_cols)
+
+# Trích xuất hai từ đầu tiên từ cột Product_Name
+data['First_Two_Words'] = data['Product_Name'].str.split().str[:2].str.join(' ')
+
+# --- Biểu đồ 1: Số lượng sản phẩm theo hai từ đầu ---
+word_counts = data['First_Two_Words'].value_counts()
+top_words = word_counts.head(15)
+
+plt.figure(figsize=(10, 6))
+top_words.plot(kind='bar', color='skyblue')
+plt.title('Top 15 nhóm sản phẩm theo hai từ đầu', fontsize=14)
+plt.xlabel('Hai từ đầu của tên sản phẩm', fontsize=12)
+plt.ylabel('Số lượng sản phẩm', fontsize=12)
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.show()
+
+# --- Biểu đồ 2: So sánh Lượt thích và Lượt bán của Top 15 sản phẩm ---
+top_15_sold = data.nlargest(15, 'Sold')
+plt.figure(figsize=(14, 8))
+x = range(len(top_15_sold))
+
+plt.bar(x, top_15_sold['Likes'], width=0.4, label='Lượt thích', color='skyblue', align='center')
+plt.bar(x, top_15_sold['Sold'], width=0.4, label='Lượt bán', color='pink', align='edge')
+plt.xticks(x, top_15_sold['Product_Name'], rotation=45, ha='right', fontsize=6)
+plt.title('So sánh Lượt thích và Lượt bán của Top 15 Sản phẩm', fontsize=16)
+plt.xlabel('Tên sản phẩm', fontsize=10)
+plt.ylabel('Số lượng', fontsize=12)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# --- Biểu đồ 3: Phân tán 2D và 3D với PCA ---
+# Chuẩn hóa dữ liệu
+X = data[numeric_cols].values  # Chỉ lấy các cột số
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# PCA giảm xuống 2 chiều
+pca_2d = PCA(n_components=2)
+X_pca_2d = pca_2d.fit_transform(X_scaled)
+
+plt.figure(figsize=(8, 6))
+plt.scatter(X_pca_2d[:, 0], X_pca_2d[:, 1], c=data['First_Two_Words'].factorize()[0], cmap='plasma', edgecolor='k', s=100)
+plt.title('PCA giảm xuống 2 chiều', fontsize=14)
+plt.xlabel('Thành phần chính 1')
+plt.ylabel('Thành phần chính 2')
+plt.colorbar(label='Nhóm sản phẩm (2 từ đầu)')
+plt.grid()
+plt.tight_layout()
+plt.show()
+
+# PCA giảm xuống 3 chiều
+pca_3d = PCA(n_components=3)
+X_pca_3d = pca_3d.fit_transform(X_scaled)
+
+fig = plt.figure(figsize=(10, 8))
+ax = fig.add_subplot(111, projection='3d')
+sc = ax.scatter(X_pca_3d[:, 0], X_pca_3d[:, 1], X_pca_3d[:, 2],
+                c=data['First_Two_Words'].factorize()[0], cmap='plasma', edgecolor='k', s=100)
+ax.set_title('PCA giảm xuống 3 chiều', fontsize=16)
+ax.set_xlabel('Thành phần chính 1')
+ax.set_ylabel('Thành phần chính 2')
+ax.set_zlabel('Thành phần chính 3')
+fig.colorbar(sc, label='Nhóm sản phẩm (2 từ đầu)')
+plt.show()
+
+
